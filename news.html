@@ -1,0 +1,455 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>开心消消乐2.0</title>
+
+<style>
+html,body {
+  text-align: center;
+  background-image: url( background.jpg );
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  width: 1920px;
+  height: 1080px;
+}
+
+#time {
+  text-align: center;
+  height: 100px;
+  width: 100px;
+  border: 10px solid black;
+  transform: translate( 350%, 9% );
+}
+
+#main {
+  background-color: transparent;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  transform: translate( -50%, -100% );
+  height: 500px;
+  width: 1000px;
+  border: 10px solid black;
+  padding: 10px;
+  margin: 10px;
+}
+
+#main div {
+  position: relative;
+  float: left;
+  background-color: green;
+  border: 2px solid black;
+  height: 75px;
+  width: 75px;
+  margin: 10.5px;
+}
+
+#option {
+  background-color: transparent;
+  position: relative;
+  height: 320px;
+  width: 80px;
+  border: 10px solid black;
+  margin: 10px;
+  transform: translate( 230%, -162% );
+}
+
+#re {
+  background-color: transparent;
+  position: relative;
+  height: 80px;
+  width: 80px;
+  border: 10px solid black;
+  margin: 10px;
+  transform: translate( 230%, -462% );
+}
+
+#rank {
+  background-color: transparent;
+  position: relative;
+  height: 500px;
+  width: 60px;
+  border: 10px solid black;
+  padding: 10px;
+  margin: 10px;
+  transform: translate( 1600%, -188% );
+}
+
+#r {
+  color: snow;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+p {
+  text-align: center;
+  color: red;
+  font-size: 40px;
+}
+
+button {
+  background: url( restart.jpg ); 
+  width: 80px; 
+  height: 80px; 
+  background-position: center center;
+  background-size: cover;
+}
+
+#score {
+  width: 200px;
+  height: 80px;
+  background-position: center center;
+  background-size: cover;
+  border: 10px solid black;
+  padding: 10px;
+  margin: 10px;
+  transform: translate( 345%, -100% )
+}
+
+#score p {
+  text-align: center;
+  color: red;
+  font-size: 30px;
+  line-height: 30px;
+}
+</style>
+
+<script> //之前的那个拖动法除了花哨其他都难顶，看了大量干货后我决定更换为常用的坐标标记法，基本是完全重新开肝
+var timeLoad;
+var times=61;
+var scores=0;
+var lastx=0;
+var lasty=0;
+var mouseDown=0;
+var scanx=0;
+var scany=0;
+var scanLastx=0;
+var scanLasty=0;
+var clearx=0;
+var cleary=0;
+var clearLastx=0;
+var clearLasty=0;
+var mid1=0;
+var mid2=0
+var coordinate1=0;
+var coordinate2=0;
+var scanx_right=0;
+var scany_right=0;
+var scanLastx_right=0;
+var scanLasty_right=0;
+var DOL=0;
+var imgLocate=new Array();
+var target=new Array();
+var imgs=new Array("a0.jpg","a1.jpg","a2.jpg","a3.jpg","a4.jpg","a5.jpg");//成堆的变量，其实应该可以简化一下，我会后续尝试
+
+//重开（开局）代码，比之前那个克隆+随机更改图片要高大上一些
+function restart(){
+    clearTimeout(timeLoad);//不清的话几个定时器会一起进行，时间光速流逝
+    times=61;
+    limitTime();
+    scores=0;
+    var x=document.getElementById("main"); 
+    x.innerHTML="";
+    mouseDown=0;
+    for(var i = 0; i < 5; i++){
+        imgLocate[i] = new Array();
+        for (var j = 0; j < 10; j++) {
+            imgLocate[i][j] ="";
+        }//为每一个图片都准备好属于自己的imgLocate[i][j]作为判断依据
+    }
+    for(var i = 0; i < 5; i++){
+        for( var j = 0; j < 10; j++) {
+            imgLocate[i][j] = Math.floor(Math.random()*6);
+            x.innerHTML += "<div name='base' onclick='exchange(" + i + "," + j + ")'><img width='75px' height='75px' src='" + imgs[imgLocate[i][j]]+ "' ></div>";
+        }
+    }//每一个imgLocate[i][j]对应一个数字，每个数字对应一个图片，插入含有专属标记及图片的div*50
+    scanAll()//开局图片随机生成，为避免重复以此消除
+}
+
+//交换代码，综合所有点击情况给予对应回应
+function exchange(x,y){
+    if (mouseDown == 0){
+        lastx = x;
+        lasty = y;
+    }//总之先把第一次点击的结果记下来
+    mouseDown++;
+    if(mouseDown == 2 && lastx == x && lasty == y){
+        mouseDown=1;
+        alert("¿你再点");
+    }//点击同一图片
+    if(mouseDown==2){
+        if(Math.abs(lasty - y) == 1 || Math.abs(lastx - x) == 1){//点击相邻图片
+            if(Math.abs(lasty - y) == 1 && Math.abs(lastx - x) == 1){
+                mouseDown=0;
+                alert("对角线法则不可取")
+            }//对角线相邻对象
+            else{
+                alert("交换");
+                mid1=imgLocate[x][y];
+                mid2=imgLocate[lastx][lasty];
+                imgLocate[lastx][lasty]=mid1;
+                imgLocate[x][y]=mid2;
+                target=document.getElementsByName("base");
+                coordinate1=x*10+y;
+                target[coordinate1].innerHTML="<img width='75px' height='75px' src='" + imgs[mid2] +"'>";
+                coordinate2=lastx*10+lasty;
+                target[coordinate2].innerHTML="<img width='75px' height='75px' src='" + imgs[mid1] + "'>";
+                scan(x,y);
+                remove(x,y);
+                mouseDown=0;
+            }//左右上下相邻对象，交换图片及对应数据，检验是否能够消除
+        } 
+        else{
+            alert("不会太远了🐴");//其余情况（不相邻）
+            mouseDown=0;
+        }
+    }
+}
+
+//超长判断语句预警。讲真这里是真的过长了，应该缩减一下，但我刚开始其实没预料到会这么长的（刚开始只考虑了x，y的情况）
+function scan(x,y){
+    for(var a=0;;a++){
+        scanx=x-a;
+        if(scanx<0 || imgLocate[scanx][y] != imgLocate[x][y]){
+            break;
+        }
+        else if(imgLocate[scanx][y] == imgLocate[x][y]){
+            clearx++;    
+        }
+    }//寻找并记录与图片xy上方相连的最远相同图片坐标，并记录相连数目
+    for(var a=1;;a++){
+        scanx_right=x+a;
+        if(x+a>4 || imgLocate[scanx_right][y] != imgLocate[x][y]){
+            break;
+        }
+        else if(imgLocate[scanx_right][y] == imgLocate[x][y]){
+            clearx++;
+        }
+    }//寻找并记录与图片xy下方相连的最远相同图片坐标，并记录相连数目
+    for(var a=0;;a++){
+        scanLastx=lastx-a;
+        if(scanLastx<0 || imgLocate[scanLastx][lasty] != imgLocate[lastx][lasty]){
+            break;
+        }
+        else if(imgLocate[scanLastx][lasty] == imgLocate[lastx][lasty]){
+            clearLastx++
+        }
+    }//后面的就是lastx，lasty及xy左右的判定，格式基本一样
+    for(var a=1;;a++){
+        scanLastx_right=lastx+a;
+        if(lastx+a>4 || imgLocate[scanLastx_right][lasty] != imgLocate[lastx][lasty]){
+            break;
+        }
+        else if(imgLocate[scanLastx_right][lasty] == imgLocate[lastx][lasty]){
+            clearLastx++
+        }
+    }
+    for(var a=0;;a++){
+        scany=y-a;
+        if(scany<0 || imgLocate[x][scany] != imgLocate[x][y]){
+            break;
+        }
+        else if (imgLocate[x][scany] == imgLocate[x][y]){
+            cleary++;
+        }
+    }
+    for(var a=1;;a++){
+        scany_right=y+a;
+        if(y+a>9 || imgLocate[x][scany_right] != imgLocate[x][y]){
+            break;
+        }
+        else if(imgLocate[x][scany_right] == imgLocate[x][y]){
+            cleary++;
+        }
+    }
+    for(var a=0;;a++){
+        scanLasty=lasty-a;
+        if(scanLasty<0 || imgLocate[lastx][scanLasty] != imgLocate[lastx][lasty]){
+            break;
+        }
+        else if(imgLocate[lastx][scanLasty] == imgLocate[lastx][lasty]){
+            clearLasty++;
+        }
+    }
+    for(var a=1;;a++){
+        scanLasty_right=lasty+a;
+        if(lasty+a>9 || imgLocate[lastx][scanLasty_right] != imgLocate[lastx][lasty]){
+            break;
+        }
+        else if(imgLocate[lastx][scanLasty_right] == imgLocate[lastx][lasty]){
+            clearLasty++;
+        }
+    }
+    if(clearx < 3){
+        clearx=0;
+        scanx=0;
+        scanx_right=0;
+    }//相同数目小于3则重置
+    if(clearLastx < 3){
+        clearLastx=0;
+        scanLastx=0;
+        scanLastx_right=0;
+    }//以下同上
+    if(cleary < 3){
+        cleary=0;
+        scany=0;
+        scany_right=0;
+    }
+    if(clearLasty < 3){
+        clearLasty=0;
+        scanLasty=0;
+        scanLasty_right=0;
+    }
+    if(clearx == 0 && cleary == 0 && clearLastx == 0 && clearLasty == 0){
+        imgLocate[lastx][lasty]=mid2;
+        imgLocate[x][y]=mid1;
+        target[coordinate1].innerHTML="<img width='75px' height='75px' src='" + imgs[mid1] + "'>";
+        target[coordinate2].innerHTML="<img width='75px' height='75px' src='" + imgs[mid2] + "'>";     
+    }//如果上下左右都不满足3，就换回去
+}
+
+//接下来就是喜闻乐见的交换时间，更换符合条件的图片为“哦豁，完蛋”，并给予id（用于增添的识别标记）
+function remove(x,y){
+    scanx=scanx+1;
+    scany=scany+1;
+    scanLastx=scanLastx+1;
+    scanLasty=scanLasty+1;
+    if(clearx >= 3){
+        for(var a=0;a<clearx;a++){
+            target=document.getElementsByName("base");
+            coordinate1=scanx*10+a*10+y;
+            target[coordinate1].innerHTML="<img id='dead' width='75px' height='75px' src='dead.jpg'>";
+        }
+    }
+    if(clearLastx >= 3){
+        for(var a=0;a<clearLastx;a++){
+            target=document.getElementsByName("base");
+            coordinate2=scanLastx*10+a*10+lasty;
+            target[coordinate2].innerHTML="<img id='dead' width='75px' height='75px' src='dead.jpg'>";
+        }
+    }
+    if(cleary >= 3){
+        for(var a=0;a<cleary;a++){
+            target=document.getElementsByName("base");
+            coordinate1=x*10+scany+a;
+            target[coordinate1].innerHTML="<img id='dead' width='75px' height='75px' src='dead.jpg'>";
+        }
+    }
+    if(clearLasty >= 3){
+        for(var a=0;a<clearLasty;a++){
+            target=document.getElementsByName("base");
+            coordinate2=lastx*10+scanLasty+a;
+            target[coordinate2].innerHTML="<img id='dead' width='75px' height='75px' src='dead.jpg'>";
+        }
+    }
+    var watchScore=document.getElementById("score");
+    scores=scores+clearx+cleary+clearLastx+clearLasty
+    watchScore.innerHTML="<p >恁的成绩<br>"+scores+"</p>"//分数记录，脑子一抽直接写进来了
+    clearx=0;
+    clearLastx=0;
+    cleary=0;
+    clearLasty=0;//重置符合的消除数目
+    addImg()//增添新的图片
+}
+
+//全盘扫描代码，执行于开局及新生成图片后
+function scanAll(){
+    lastx=0;
+    lasty=0;
+    for(var i=0;i<5;i++){
+        for(var j=0;j<10;j++){
+            lastx=0,lasty=0;
+            coordinate2=0;
+            coordinate1=i*10+j;
+            mid1=imgLocate[i][j];
+            mid2=imgLocate[lastx][lasty];
+            target=document.getElementsByName("base");
+            scan(i,j);
+            remove(i,j);//这里由于交换及消除设计问题，我只能将lastxlasty图片固定为第一张，对后一份图片进行逐步扫描
+        }
+    }
+}
+
+//增添代码。这里真的有鬼...周五的时候这玩意频出bug以至于我把它封印了起来，结果周六重新运行之后又没问题了，我？？？难道是我当时插入的位置不对？？？
+function addImg(){
+    DOL=0;
+    for(var i=0;i<5;i++){
+        for(var j=0;j<10;j++){
+            target=document.getElementsByName("base")[i*10+j];
+            var adds=document.getElementsByName("base")[i*10+j].getElementsByTagName("img")[0].getAttribute("id");
+            if(adds != null ){//大佬这里有个问题，刚开始时我的判断语句是左字符串等于右字符串（即dead == dead），但却无法执行下述操作
+                imgLocate[i][j] = Math.floor(Math.random()*6);
+                target.innerHTML = "<img width=75px height=75px src='" + imgs[imgLocate[i][j]]+ "'>";
+                DOL++;
+            }//不是无法判断，用alert验证确实能返回dead字符串，且判断语句不报错
+        }
+    } 
+    if(DOL>0) {
+        scanAll();
+    }
+}//以DOL为循环判断依据，DOL在每次开始都归为0，当检测到有图片需要添加时便递增，若DOL>0则说明有新图片生成，需再次对其进行扫描，否则结束循环。
+
+function music(){
+    var playAudio=document.getElementsByTagName("audio")[0];
+    if(playAudio.paused){
+        playAudio.play();
+    }
+    else{
+        playAudio.pause();
+    }
+}//音乐开关，通过获取音乐播放信息决定是否播放（chrome无法自动播放害我用这方法手动启动，爬）
+
+function volumeUp(){
+    var audioVolume=document.getElementsByTagName("audio")[0];
+    audioVolume.volume=audioVolume.volume+0.1
+}//音量增大
+
+function volumeDown(){
+    var audioVolume=document.getElementsByTagName("audio")[0];
+    audioVolume.volume=audioVolume.volume-0.1
+}//音量减少
+
+function limitTime(){
+    var timetable=document.getElementById("time");
+    times--;
+    timetable.innerHTML="<p>"+times+"</p>";
+    if(times>=1){
+        timeLoad=setTimeout("limitTime()",1000);
+    }
+    if(times==0){
+        alert("还搁这玩呢？我时间呢？")
+        var x=document.getElementById("main"); 
+        x.innerHTML="";
+        var y=document.getElementById("rank");
+        y.innerHTML+="<p>"+scores+"<P>";//记下分数
+    }
+}//计时器
+</script>
+
+</head>
+
+<body>
+<p>开心(猝死)消消乐2.0</p>
+<div id="time"></div>
+<div id="score"></div>
+<div id="main" ></div>
+
+<div id="option">
+    <img src="open_close.jpg" style="margin-top:10px; margin-bottom:10px;" onclick="music()">
+    <img src="up.jpg" style="margin-top:10px; margin-bottom:10px;" onclick="volumeUp()">
+    <img src="down.jpg" style="margin-top:10px; margin-bottom:10px;" onclick="volumeDown()">
+    <audio id ="music" src="想い出は遠くの日々.mp3" loop="loop"  ></audio>
+</div>
+
+<div id="re">
+    <button type="button" onclick="restart()" ></button>
+    <p id="r">大侠请重新来过</p>
+</div>
+
+<div id="rank">
+    <p>记录</p>
+</div>
+</body>
+</html> 
